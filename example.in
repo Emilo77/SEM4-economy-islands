@@ -1,0 +1,44 @@
+10 33 4
+A 12 11 12 8
+B 7 7 10 8
+C 13 7 11 10
+D 7 8 13 11
+E 13 12 10 9
+F 9 7 9 12
+G 8 12 8 7
+H 13 7 8 10
+I 9 13 9 7
+J 13 11 8 11
+A B 6
+B A 5
+B D 3
+D B 2
+B G 5
+G B 4
+D H 7
+B H 3
+H B 2
+H G 5
+G H 4
+D G 3
+G D 2
+C D 6
+G C 5
+C G 3
+C I 3
+I C 3
+I G 6
+I F 8
+A F 3
+F E 5
+E F 4
+G A 5
+E A 4
+J H 4
+J G 9
+G J 8
+H E 5
+E H 4
+H A 4
+A J 6
+E J 4
