@@ -5,6 +5,7 @@
 
 
 #define DEBUG 1
+#define STEPS 20
 using namespace std;
 
 size_t result = 0;
@@ -22,6 +23,7 @@ public:
 struct Data {
 	map<char, Island> islands;
 	map<char, map<char, int>> paths;
+	map<char, map<char, int>> best_materials_to_buy;
 	int island_number{-1};
 	int paths_number{-1};
 	int goods_number{-1};
@@ -60,6 +62,37 @@ struct Data {
 			cerr << "Paths: " << paths_number << endl;
 			cerr << "Goods number: " << goods_number << endl;
 			cerr << "Starting island: " << starting_island_c << endl;
+		}
+		calculate_paths();
+	}
+
+private:
+	int
+	find_best_material_id(Island &current_island, Island &next_island) const {
+		int best_material_id = -1;
+		int biggest_difference = -1;
+		for (int i = 0; i < goods_number; ++i) {
+			int difference =
+					next_island.goods_cost[i] - current_island.goods_cost[i];
+			if (difference > 0 && difference > biggest_difference) {
+				biggest_difference = difference;
+				best_material_id = i;
+			}
+		}
+		return best_material_id;
+	}
+
+	void calculate_paths() {
+		for (auto &island: paths) {
+			best_materials_to_buy.insert({island.first, map<char, int>()});
+			for (auto &path: island.second) {
+				best_materials_to_buy.at(island.first).insert({path.first,
+				                                               find_best_material_id(
+						                                               islands.at(
+								                                               island.first),
+						                                               islands.at(
+								                                               path.first))});
+			}
 		}
 	}
 };
@@ -112,14 +145,13 @@ public:
 		return all_visited() && (current_island.name == data.starting_island_c);
 	}
 
-	static void print_status(int total_money) {
+	static void check_result(int total_money) {
 		if (total_money > result) {
 			result = total_money;
 			if (DEBUG) {
-				cerr << "Nowy wynik:" << result << endl;
+				cerr << "Nowy wynik: " << result << endl;
 			};
 		}
-
 	}
 
 
@@ -127,9 +159,9 @@ public:
 		int travel_cost = data.paths.at(current_island.name).at(
 				next_island.name);
 		int total_money = get_total_money();
-		if (steps_done >= 20) {
+		if (steps_done >= STEPS) {
 			if (jurney_done_successfully()) {
-				print_status(total_money);
+				check_result(total_money);
 			}
 			return false;
 		}
@@ -143,6 +175,9 @@ public:
 		if (!visited.at(current_island.name)) {
 			visited.at(current_island.name) = true;
 			visited_number++;
+		}
+		if (current_island.name == data.starting_island_c) {
+			check_result(get_total_money());
 		}
 	}
 
@@ -165,27 +200,14 @@ public:
 		current_money += money_to_keep;
 	}
 
-	int find_best_material_id(Island &next_island) const {
-		int best_material_id = -1;
-		int biggest_difference = -1;
-		for (int i = 0; i < data.goods_number; ++i) {
-			int difference =
-					next_island.goods_cost[i] - current_island.goods_cost[i];
-			if (difference > 0 && difference > biggest_difference) {
-				biggest_difference = difference;
-				best_material_id = i;
-			}
-		}
-		return best_material_id;
-	}
-
 
 	bool can_visit_next_island(Island &next_island) {
 		if (!check_next_island(next_island)) {
 			return false;
 		}
 		int travel_cost = cost_between(next_island);
-		int material_id = find_best_material_id(next_island);
+		int material_id = data.best_materials_to_buy.at(current_island.name).at(
+				next_island.name);
 		sell_all();
 		buy(material_id, travel_cost);
 		travel_to_next_island(next_island);
@@ -197,7 +219,8 @@ public:
 class Simulation {
 public:
 
-	static void try_to_visit(Traveler traveler, Island &next_island, Data &data) {
+	static void
+	try_to_visit(Traveler traveler, Island &next_island, Data &data) {
 		if (traveler.can_visit_next_island(next_island)) {
 			visit(traveler, data);
 		}
