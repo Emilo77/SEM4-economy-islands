@@ -10,6 +10,16 @@ using namespace std;
 
 size_t result = 0;
 
+struct rollback_info {
+	int sold_amount;
+	int sold_id;
+	int bought_amount;
+	int bought_id;
+	bool newly_visited;
+
+
+};
+
 
 class Island {
 public:
@@ -23,7 +33,6 @@ public:
 struct Data {
 	map<char, Island> islands;
 	map<char, map<char, int>> paths;
-	map<char, map<char, int>> best_materials_to_buy;
 	int island_number{-1};
 	int paths_number{-1};
 	int goods_number{-1};
@@ -63,37 +72,6 @@ struct Data {
 			cerr << "Goods number: " << goods_number << endl;
 			cerr << "Starting island: " << starting_island_c << endl;
 		}
-		calculate_paths();
-	}
-
-private:
-	int
-	find_best_material_id(Island &current_island, Island &next_island) const {
-		int best_material_id = -1;
-		int biggest_difference = -1;
-		for (int i = 0; i < goods_number; ++i) {
-			int difference =
-					next_island.goods_cost[i] - current_island.goods_cost[i];
-			if (difference > 0 && difference > biggest_difference) {
-				biggest_difference = difference;
-				best_material_id = i;
-			}
-		}
-		return best_material_id;
-	}
-
-	void calculate_paths() {
-		for (auto &island: paths) {
-			best_materials_to_buy.insert({island.first, map<char, int>()});
-			for (auto &path: island.second) {
-				best_materials_to_buy.at(island.first).insert({path.first,
-				                                               find_best_material_id(
-						                                               islands.at(
-								                                               island.first),
-						                                               islands.at(
-								                                               path.first))});
-			}
-		}
 	}
 };
 
@@ -105,6 +83,7 @@ public:
 	int current_money;
 	vector<int> goods_amount;
 	map<char, bool> visited{};
+	vector<char> traveler_path{};
 	int visited_number{1};
 
 	explicit Traveler(Data &data) : data(data), current_island(
@@ -159,7 +138,8 @@ public:
 		int travel_cost = data.paths.at(current_island.name).at(
 				next_island.name);
 		int total_money = get_total_money();
-		if (steps_done >= STEPS) {
+		if (steps_done >= STEPS ||
+		    ((STEPS - steps_done) < (data.island_number - visited_number))) {
 			if (jurney_done_successfully()) {
 				check_result(total_money);
 			}
@@ -171,21 +151,24 @@ public:
 		return true;
 	}
 
-	void set_visited() {
-		if (!visited.at(current_island.name)) {
-			visited.at(current_island.name) = true;
-			visited_number++;
-		}
+	bool set_visited() {
 		if (current_island.name == data.starting_island_c) {
 			check_result(get_total_money());
 		}
+		traveler_path.push_back(current_island.name);
+		if (!visited.at(current_island.name)) {
+			visited.at(current_island.name) = true;
+			visited_number++;
+			return true;
+		}
+		return false;
 	}
 
-	void travel_to_next_island(Island &next_island) {
+	void travel_to_next_island(Island &next_island, bool &new_visited) {
 		int travel_cost = cost_between(next_island);
 		current_money -= travel_cost;
 		current_island = data.islands.at(next_island.name);
-		set_visited();
+		new_visited = set_visited();
 		steps_done++;
 	}
 
@@ -200,31 +183,49 @@ public:
 		current_money += money_to_keep;
 	}
 
+	int find_best_material_id(Island &next_island) const {
+		int best_material_id = -1;
+		int biggest_difference = -1;
+		for (int i = 0; i < data.goods_number; ++i) {
+			int difference =
+					next_island.goods_cost[i] - current_island.goods_cost[i];
+			if (difference > 0 && difference > biggest_difference) {
+				biggest_difference = difference;
+				best_material_id = i;
+			}
+		}
+		return best_material_id;
+	}
 
-	bool can_visit_next_island(Island &next_island) {
+
+	bool can_visit_next_island(Island &next_island, rollback_info &info) {
 		if (!check_next_island(next_island)) {
 			return false;
 		}
 		int travel_cost = cost_between(next_island);
-		int material_id = data.best_materials_to_buy.at(current_island.name).at(
-				next_island.name);
+		int material_id = find_best_material_id(next_island);
 		sell_all();
 		buy(material_id, travel_cost);
-		travel_to_next_island(next_island);
+		bool new_visited;
+		travel_to_next_island(next_island, new_visited);
 		return true;
+	}
+
+	void rollback(rollback_info &info) { //todo: rollback all changes done in "can_visit_next_island"
+//		steps_done--;
+//		if ()
+//		visited.at(current_island.name) = new_visited;
+//		traveler_path.pop_back();
+//		current_island = data.islands.at(traveler_path.back());
+//		if (new_visited) {
+//			visited_number--;
+//		}
 	}
 
 };
 
 class Simulation {
 public:
-
-	static void
-	try_to_visit(Traveler traveler, Island &next_island, Data &data) {
-		if (traveler.can_visit_next_island(next_island)) {
-			visit(traveler, data);
-		}
-	}
 
 	static void visit(Traveler &traveler, Data &data) {
 		auto &current_island = traveler.current_island;
@@ -233,7 +234,11 @@ public:
 		}
 		for (auto &map_element: data.paths.at(current_island.name)) {
 			auto &next_island = data.islands.at(map_element.first);
-			try_to_visit(traveler, next_island, data);
+			rollback_info info{};
+			if (traveler.can_visit_next_island(next_island, info)) {
+				visit(traveler, data);
+//				traveler.rollback(info);
+			}
 		}
 	}
 
@@ -244,10 +249,7 @@ public:
 		}
 		printf("Największy wynik uzyskany metodą zachłanną: %zu\n", result);
 	}
-
-
 };
-
 
 int main() {
 
