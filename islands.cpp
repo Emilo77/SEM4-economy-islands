@@ -166,14 +166,16 @@ public:
 		current_money += money_to_keep;
 	}
 
-	int find_best_material_id(Island &next_island) const {
+	int find_best_material_id(Island &next_island) {
 		int best_material_id = -1;
 		int biggest_difference = -1;
 		for (int i = 0; i < data.goods_number; ++i) {
 			int difference =
 					next_island.goods_cost[i] - current_island.goods_cost[i];
-			if (difference > 0 && difference > biggest_difference) {
-				biggest_difference = difference;
+			int possible_amount = get_total_money() / current_island.goods_cost[i];
+			possible_amount *= difference;
+			if (difference > 0 && possible_amount > biggest_difference) {
+				biggest_difference = possible_amount;
 				best_material_id = i;
 			}
 		}
