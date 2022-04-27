@@ -67,7 +67,7 @@ struct Data {
 
 class Traveler {
 public:
-	Data data;
+	Data &data;
 	Island current_island;
 	int steps_done;
 	int current_money;
@@ -122,7 +122,6 @@ public:
 		}
 
 	}
-
 
 	bool check_next_island(Island &next_island) {
 		int travel_cost = data.paths.at(current_island.name).at(
@@ -181,7 +180,6 @@ public:
 		return best_material_id;
 	}
 
-
 	bool can_visit_next_island(Island &next_island) {
 		if (!check_next_island(next_island)) {
 			return false;
@@ -224,8 +222,6 @@ public:
 		}
 		printf("Największy wynik uzyskany metodą zachłanną: %zu\n", result);
 	}
-
-
 };
 
 
