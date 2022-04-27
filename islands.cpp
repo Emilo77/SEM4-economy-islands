@@ -1,11 +1,17 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <algorithm>
 
+
+#define DEBUG 1
 using namespace std;
 
+size_t result = 0;
 
-struct Island {
+
+class Island {
+public:
 	char name;
 	vector<int> goods_cost;
 
@@ -38,32 +44,35 @@ struct Data {
 				cin >> temp;
 				temp_vec.push_back(temp);
 			}
-
+			paths.insert({c, map<char, int>()});
 			islands.insert({c, Island(c, temp_vec)});
 		}
 
 		char second_island_c;
 		for (int i = 0; i < paths_number; i++) {
 			cin >> c >> second_island_c >> temp;
-			if (paths.find(c) == paths.end()) {
-				auto tempMap = map<char, int>();
-				tempMap.insert({second_island_c, temp});
-				paths.insert({c, tempMap});
-			} else {
-				paths.at(c).insert({second_island_c, temp});
-			}
+			paths.at(c).insert({second_island_c, temp});
+
+		}
+
+		if (DEBUG) {
+			cerr << "Islands: " << island_number << endl;
+			cerr << "Paths: " << paths_number << endl;
+			cerr << "Goods number: " << goods_number << endl;
+			cerr << "Starting island: " << starting_island_c << endl;
 		}
 	}
-
 };
 
-struct Traveler {
+class Traveler {
+public:
 	Data data;
-	int steps_done;
 	Island current_island;
-	map<char, bool> visited{};
+	int steps_done;
 	int current_money;
 	vector<int> goods_amount;
+	map<char, bool> visited{};
+	int visited_number{1};
 
 	explicit Traveler(Data &data) : data(data), current_island(
 			data.islands.at(data.starting_island_c)),
@@ -73,9 +82,12 @@ struct Traveler {
 		for (auto &i: data.islands) {
 			visited.insert({i.first, false});
 		}
-		//visited.at(current_island.name) = true;// mark current Island as visited
+		visited.at(current_island.name) = true;// mark current Island as visited
 	}
 
+	int cost_between(Island &next) {
+		return data.paths.at(current_island.name).at(next.name);
+	}
 
 	void sell_all() {
 		for (int i = 0; i < data.goods_number; ++i) {
@@ -84,25 +96,66 @@ struct Traveler {
 		}
 	}
 
+	int get_total_money() {
+		int total_money = current_money;
+		for (int i = 0; i < data.goods_number; ++i) {
+			total_money += current_island.goods_cost[i] * goods_amount[i];
+		}
+		return total_money;
+	}
+
+	[[nodiscard]] bool all_visited() const {
+		return visited_number == data.island_number;
+	}
+
+	[[nodiscard]] bool jurney_done_successfully() const {
+		return all_visited() && (current_island.name == data.starting_island_c);
+	}
+
+	static void print_status(int total_money) {
+		if (total_money > result) {
+			result = total_money;
+			if (DEBUG) {
+				cerr << "Nowy wynik:" << result << endl;
+			};
+		}
+
+	}
+
+
 	bool check_next_island(Island &next_island) {
 		int travel_cost = data.paths.at(current_island.name).at(
 				next_island.name);
-		if (travel_cost > current_money || steps_done >= 20) {
+		int total_money = get_total_money();
+		if (steps_done >= 20) {
+			if (jurney_done_successfully()) {
+				print_status(total_money);
+			}
+			return false;
+		}
+		if (travel_cost > total_money) {
 			return false;
 		}
 		return true;
 	}
 
+	void set_visited() {
+		if (!visited.at(current_island.name)) {
+			visited.at(current_island.name) = true;
+			visited_number++;
+		}
+	}
+
 	void travel_to_next_island(Island &next_island) {
-		int travel_cost = data.paths.at(current_island.name).at(
-				next_island.name);
+		int travel_cost = cost_between(next_island);
 		current_money -= travel_cost;
 		current_island = data.islands.at(next_island.name);
+		set_visited();
 		steps_done++;
 	}
 
 	void buy(int material_id, int money_to_keep) {
-		if (money_to_keep >= current_money) {
+		if (material_id == -1 || money_to_keep >= current_money) {
 			return;
 		}
 		current_money -= money_to_keep;
@@ -114,23 +167,24 @@ struct Traveler {
 
 	int find_best_material_id(Island &next_island) const {
 		int best_material_id = -1;
+		int biggest_difference = -1;
 		for (int i = 0; i < data.goods_number; ++i) {
 			int difference =
 					next_island.goods_cost[i] - current_island.goods_cost[i];
-			if (difference > 0 && difference > best_material_id) {
-				best_material_id = difference;
+			if (difference > 0 && difference > biggest_difference) {
+				biggest_difference = difference;
+				best_material_id = i;
 			}
 		}
 		return best_material_id;
 	}
 
 
-	bool visit_next_island(Island &next_island) {
+	bool can_visit_next_island(Island &next_island) {
 		if (!check_next_island(next_island)) {
 			return false;
 		}
-		int travel_cost = data.paths.at(current_island.name).at(
-				next_island.name);
+		int travel_cost = cost_between(next_island);
 		int material_id = find_best_material_id(next_island);
 		sell_all();
 		buy(material_id, travel_cost);
@@ -140,19 +194,44 @@ struct Traveler {
 
 };
 
-void generate_result(Traveler traveler) {
-	auto &current_island = traveler.current_island;
-}
+class Simulation {
+public:
+
+	static void try_to_visit(Traveler traveler, Island &next_island, Data &data) {
+		if (traveler.can_visit_next_island(next_island)) {
+			visit(traveler, data);
+		}
+	}
+
+	static void visit(Traveler &traveler, Data &data) {
+		auto &current_island = traveler.current_island;
+		if (data.paths.at(current_island.name).empty()) {
+			return;
+		}
+		for (auto &map_element: data.paths.at(current_island.name)) {
+			auto &next_island = data.islands.at(map_element.first);
+			try_to_visit(traveler, next_island, data);
+		}
+	}
+
+	static void print_result() {
+		if (result == 0) {
+			printf("Nie istnieje żadne poprawne rozwiązanie.\n");
+			return;
+		}
+		printf("Największy wynik uzyskany metodą zachłanną: %zu\n", result);
+	}
+
+
+};
 
 
 int main() {
 
 	Data data;
 	data.load();
-	cout << data.islands.size() << endl;
 	Traveler new_traveler = Traveler(data);
-
-	generate_result(new_traveler);
-
+	Simulation::visit(new_traveler, data);
+	Simulation::print_result();
 	return 0;
 }
