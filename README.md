@@ -1,4 +1,33 @@
+<details><summary>:pushpin: English </summary>
+<p>
+
+## Rules of the ISLANDS 2021 Experiment
+
+There is an archipelago of ten islands. This archipelago is schematically represented in the chart below:
+
+- On each of the islands, four goods are produced: `w`, `x`, `y`, `z`.
+- The currency on the islands is the same – seashells *$*.
+- The prices of the products are different on each island. For example, on island `A`, the restriction is given by the formula *10**w** + 6**x** + 8**y** + 7**z** ≤ **M***, which means that for a total wealth of ***M*** *$*, you can buy good ***w*** for 10 *$* per unit or good ***x*** for 6 *$* per unit, etc.
+- There is an official ban on trade between these islands. However, some tourists have realized that they can profit from this ban by acting as smugglers. As a tourist, you can travel according to the direction of the arrows. The cost of travel is given next to the arrow.
+
+Imagine that you are a tourist-smuggler. Knowing the prices of the goods produced on the islands and the cost of traveling from one island to another, plan your trip to maximize your initial wealth by buying and selling goods produced on the islands.
+
+- You have a total wealth of ***M*** = `100` *$*.
+- You can make a maximum of `20` trips in one season.
+- The starting and ending point of your trip is island `A`.
+- You must visit all the islands to maintain trade contacts.
+- You can visit one island multiple times.
+- You can only move along the arrows. The cost of travel is paid before, not after the trip.
+- You can choose not to buy or sell anything on an island. You can buy one good or many goods at the same time.
+
+</p>
+</details>
+
+---
+
 ## Zasady eksperymentu WYSPY 2021
+
+
 
 
 Istnieje archipelag dziesięciu wysp. Schematycznie archipelag ten został przedstawiony na poniższym wykresie:
