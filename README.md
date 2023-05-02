@@ -20,10 +20,11 @@ Imagine that you are a tourist-smuggler. Knowing the prices of the goods produce
 - You can only move along the arrows. The cost of travel is paid before, not after the trip.
 - You can choose not to buy or sell anything on an island. You can buy one good or many goods at the same time.
 
+---
 </p>
 </details>
 
----
+
 
 ## Zasady eksperymentu WYSPY 2021
 
